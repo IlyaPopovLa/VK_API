@@ -39,40 +39,47 @@ def count_clicks(link, token):
     return None
 
 
-def is_shorten_link(url):
-    parsed = urlparse(url)
-    # Проверяем, что путь состоит из короткого идентификатора (например, 1-6 символов)
-    path = parsed.path.lstrip('/')
-    return len(path) <= 6 and path.isalnum()
+def is_shorten_link(url, token):
+    api_url = "https://api.vk.com/method/utils.checkLink"
+    params = {
+        'access_token': token,
+        'v': '5.199',
+        'url': url
+    }
+
+    response = requests.get(api_url, params=params)
+    response.raise_for_status()
+    is_shorten_link_result = response.json()
+
+    if 'response' in is_shorten_link_result:
+        return is_shorten_link_result['response'].get('status') == 'not_banned'
+    return None
 
 
 def main():
     load_dotenv()
-    url = input('Введите ссылку: ')
-    token = os.environ["VK_TOKEN"]
+    url = input('Введите ссылку: ').strip()
+    token = os.environ.get("VK_TOKEN")
 
-    if is_shorten_link(url):
-        link = urlparse(url).path.lstrip('/')
-        try:
-            clicks = count_clicks(link, token)
-            print(f"Короткая ссылка: {url}")
-            print(f"Количество кликов: {clicks}")
-        except requests.exceptions.RequestException as e:
-            print(f"Ошибка при запросе статистики: {e}")
-    else:
-        try:
+    try:
+        url_components = urlparse(url)
+        if url_components.netloc.endswith('vk.cc'):
+            link_key = url_components.path.lstrip('/')
+            short_url = url
+        else:
             short_url, error = shorten_link(url, token)
             if error:
-                print(f"Ошибка: {error}")
+                print(f"Ошибка при сокращении: {error}")
                 return
+            link_key = urlparse(short_url).path.lstrip('/')
 
-            print(f"Сокращенная ссылка: {short_url}")
-            link = urlparse(short_url).path.lstrip('/')
-            clicks = count_clicks(link, token)
-            print(f"Количество кликов: {clicks}")
+        clicks = count_clicks(link_key, token)
 
-        except requests.exceptions.RequestException as e:
-            print(f"Ошибка при сокращении ссылки: {e}")
+        print(f"Сокращенная ссылка: {short_url}")
+        print(f"Количество кликов: {clicks if clicks is not None else 'статистика недоступна'}")
+
+    except requests.exceptions.RequestException as e:
+        print(f"Ошибка сети: {e}")
 
 
 if __name__ == "__main__":
