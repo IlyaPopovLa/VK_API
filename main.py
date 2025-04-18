@@ -40,7 +40,7 @@ def count_clicks(link, token):
 
 
 def is_shorten_link(url, token):
-    api_url = "https://api.vk.com/method/utils.checkLink"
+    api_url = "https://api.vk.ru/method/utils.getLinkStats"
     params = {
         'access_token': token,
         'v': '5.199',
@@ -51,9 +51,7 @@ def is_shorten_link(url, token):
     response.raise_for_status()
     is_shorten_link_result = response.json()
 
-    if 'response' in is_shorten_link_result:
-        return is_shorten_link_result['response'].get('status') == 'not_banned'
-    return None
+    return 'response' in is_shorten_link_result
 
 
 def main():
@@ -65,7 +63,6 @@ def main():
         url_components = urlparse(url)
         if url_components.netloc.endswith('vk.cc'):
             link_key = url_components.path.lstrip('/')
-            short_url = url
             clicks = count_clicks(link_key, token)
 
             print(f"Количество кликов: {clicks if clicks is not None else 'статистика недоступна'}")
@@ -74,7 +71,6 @@ def main():
             if error:
                 print(f"Ошибка при сокращении: {error}")
                 return
-
             print(f"Сокращенная ссылка: {short_url}")
 
     except requests.exceptions.RequestException as e:
