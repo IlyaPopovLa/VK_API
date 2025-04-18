@@ -66,17 +66,16 @@ def main():
         if url_components.netloc.endswith('vk.cc'):
             link_key = url_components.path.lstrip('/')
             short_url = url
+            clicks = count_clicks(link_key, token)
+
+            print(f"Количество кликов: {clicks if clicks is not None else 'статистика недоступна'}")
         else:
             short_url, error = shorten_link(url, token)
             if error:
                 print(f"Ошибка при сокращении: {error}")
                 return
-            link_key = urlparse(short_url).path.lstrip('/')
 
-        clicks = count_clicks(link_key, token)
-
-        print(f"Сокращенная ссылка: {short_url}")
-        print(f"Количество кликов: {clicks if clicks is not None else 'статистика недоступна'}")
+            print(f"Сокращенная ссылка: {short_url}")
 
     except requests.exceptions.RequestException as e:
         print(f"Ошибка сети: {e}")
