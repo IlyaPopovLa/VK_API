@@ -40,17 +40,17 @@ def count_clicks(link, token):
 
 
 def is_shorten_link(url, token):
+    parsed_url = urlparse(url)
     api_url = "https://api.vk.ru/method/utils.getLinkStats"
     params = {
         'access_token': token,
         'v': '5.199',
-        'url': url
+        'key': parsed_url.path.lstrip('/')
     }
 
     response = requests.get(api_url, params=params)
     response.raise_for_status()
     is_shorten_link_result = response.json()
-
     return 'response' in is_shorten_link_result
 
 
@@ -60,18 +60,16 @@ def main():
     token = os.environ.get("VK_TOKEN")
 
     try:
-        url_components = urlparse(url)
-        if url_components.netloc.endswith('vk.cc'):
-            link_key = url_components.path.lstrip('/')
+        if is_shorten_link(url, token):
+            link_key = urlparse(url).path.lstrip('/')
             clicks = count_clicks(link_key, token)
-
             print(f"Количество кликов: {clicks if clicks is not None else 'статистика недоступна'}")
         else:
             short_url, error = shorten_link(url, token)
             if error:
                 print(f"Ошибка при сокращении: {error}")
-                return
-            print(f"Сокращенная ссылка: {short_url}")
+            else:
+                print(f"Сокращенная ссылка: {short_url}")
 
     except requests.exceptions.RequestException as e:
         print(f"Ошибка сети: {e}")
